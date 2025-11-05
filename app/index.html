@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Omni Player Pro</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- === 起動ゲート === -->
+  <div id="gate" class="gate" aria-modal="true" role="dialog">
+    <div class="gate-card">
+      <div class="gate-title" id="i_app_name">Omni Player</div>
+      <p id="i_gate_msg">再生・可視化を開始するには下のボタンを押してください。</p>
+      <button id="gateStart" class="btn primary" data-i18n="start_btn">開始 / Start</button>
+      <p class="gate-hint" id="i_gate_hint">※Autoplay規制により、ボタン操作後にAudioContextを開始します。</p>
+    </div>
+  </div>
+
+  <canvas id="bg" aria-hidden="true"></canvas>
+
+  <div class="layout" id="app">
+    <aside class="sidebar">
+      <div class="tools">
+        <button id="open" class="btn" data-i18n="open">開く</button>
+        <button id="openUrl" class="btn" data-i18n="open_url">URL</button>
+        <input id="search" placeholder="検索..." data-i18n-ph="search_ph" />
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" data-i18n="subs">字幕</div>
+        <div class="row">
+          <button id="ccToggle" class="btn" data-i18n="subs_toggle">字幕 視/非</button>
+          <button id="cc" class="btn" data-i18n="subs_next">字幕 次</button>
+          <input id="subFile" type="file" accept=".srt,.vtt,.ass,.ssa" hidden>
+          <button id="subAdd" class="btn" data-i18n="subs_add">字幕+</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" data-i18n="visualizer">Visualizer</div>
+        <label class="inline" for="vizMode">モード
+          <select id="vizMode">
+            <option value="bars">Bars</option>
+            <option value="barsPro">Bars Pro</option>
+            <option value="line">Line</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="scope">Scope</option>
+            <option value="sunburst">Sunburst</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+        <label class="inline">バー密度
+          <input type="range" id="vizBars" min="24" max="144" step="1" value="72">
+        </label>
+        <label class="inline">不透明度
+          <input type="range" id="vizAlpha" min="0" max="1" step="0.01" value="0.95">
+        </label>
+        <label class="inline">高さ（動画内）
+          <input type="range" id="vizHeight" min="10" max="45" step="1" value="22">
+        </label>
+        <label class="inline">ピークキャップ
+          <input type="checkbox" id="vizCaps" checked>
+        </label>
+        <label class="inline">グラデ
+          <select id="vizGrad">
+            <option value="accent">Accent</option>
+            <option value="auto">Auto</option>
+            <option value="rainbow">Rainbow</option>
+            <option value="flat">Flat</option>
+          </select>
+        </label>
+        <label class="inline">量子化
+          <input type="range" id="vizQuant" min="0" max="20" step="1" value="2">
+        </label>
+        <label class="inline">色：動画から自動
+          <input type="checkbox" id="vizAutoColor" checked>
+        </label>
+        <label class="inline">視認性モード（Bars系）
+          <input type="checkbox" id="vizHiVis">
+        </label>
+        <label class="inline">ウォーターフォール
+          <input type="checkbox" id="vizWaterfall">
+        </label>
+
+        <hr style="border-color:#1c2b4a;">
+        <label class="inline">アンカー
+          <select id="vizAnchor">
+            <option value="bottom">下</option>
+            <option value="center">中央</option>
+            <option value="top">上</option>
+          </select>
+        </label>
+        <label class="inline">下マージン(px)
+          <input type="range" id="vizBottom" min="0" max="120" step="2" value="0">
+        </label>
+        <label class="inline">ミラー表示
+          <input type="checkbox" id="vizMirror">
+        </label>
+        <label class="inline">グリッド
+          <input type="checkbox" id="vizGrid">
+        </label>
+        <label class="inline">ラベル
+          <input type="checkbox" id="vizLabels">
+        </label>
+        <label class="inline">ビート火花
+          <input type="checkbox" id="vizParticles">
+        </label>
+        <div class="row">
+          <button class="btn ghost" id="vizExport">スペクトラムPNG</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" data-i18n="eq_title">イコライザー / 音質</div>
+        <div class="row">
+          <label class="inline"><input type="checkbox" id="eqEnable" checked> EQ有効</label>
+          <label class="inline"><input type="checkbox" id="limiterEnable" checked> リミッター</label>
+          <label class="inline"><input type="checkbox" id="autoGainEnable"> 自動音量</label>
+        </div>
+        <div id="eqBands" class="eq">
+          <div class="eqcol" data-f="31">31</div>
+          <div class="eqcol" data-f="62">62</div>
+          <div class="eqcol" data-f="125">125</div>
+          <div class="eqcol" data-f="250">250</div>
+          <div class="eqcol" data-f="500">500</div>
+          <div class="eqcol" data-f="1000">1k</div>
+          <div class="eqcol" data-f="2000">2k</div>
+          <div class="eqcol" data-f="4000">4k</div>
+          <div class="eqcol" data-f="8000">8k</div>
+          <div class="eqcol" data-f="16000">16k</div>
+        </div>
+        <div class="row">
+          <button class="btn ghost" id="eqFlat">Flat</button>
+          <button class="btn ghost" id="eqBass">Bass+</button>
+          <button class="btn ghost" id="eqVocal">Vocal</button>
+          <button class="btn ghost" id="eqTreble">Treble+</button>
+          <label class="inline">Preamp
+            <input type="range" id="preamp" min="-12" max="12" step="0.5" value="0">
+          </label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" data-i18n="marks_loop">マーカー / ループ</div>
+        <div class="row">
+          <button id="markAdd" class="btn ghost">🔖 追加</button>
+          <button id="markExport" class="btn ghost">書き出し(VTT)</button>
+          <input id="markFile" type="file" accept=".vtt,.txt,.csv" hidden>
+          <button id="markImport" class="btn ghost">読み込み</button>
+        </div>
+        <div class="row">
+          <label class="inline">ループ
+            <select id="loopMode">
+              <option value="off">Off</option>
+              <option value="one">一曲</option>
+              <option value="all">全体</option>
+            </select>
+          </label>
+          <label class="inline"><input type="checkbox" id="shuffle"> シャッフル</label>
+          <label class="inline"><input type="checkbox" id="bounceAB"> A↔Bバウンス</label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" data-i18n="smart">スマート再生</div>
+        <label class="inline">静音スキップ
+          <input type="checkbox" id="smartSkip">
+        </label>
+        <label class="inline">静音高速
+          <input type="checkbox" id="smartSpeed">
+        </label>
+        <label class="inline">しきい値
+          <input type="range" id="smartLevel" min="0.01" max="0.25" step="0.01" value="0.08">
+        </label>
+        <label class="inline">滞在(ms)
+          <input type="range" id="smartHold" min="200" max="2000" step="100" value="900">
+        </label>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title" data-i18n="others">その他</div>
+        <div class="row">
+          <button id="sleep" class="btn ghost">⏱ スリープ</button>
+          <button id="help" class="btn ghost">⌨ ショートカット</button>
+          <button id="exportSettings" class="btn ghost">設定書出</button>
+          <input id="importSettingsFile" type="file" accept=".json" hidden>
+          <button id="importSettings" class="btn ghost">設定読込</button>
+          <button id="logToggle" class="btn ghost">🪵 ログ</button>
+        </div>
+      </div>
+
+      <ul id="plist"></ul>
+    </aside>
+
+    <main class="stage">
+      <div class="titlebar">
+        <h1 id="title">-</h1>
+        <div class="titlebar-right">
+          <button id="langBtn" class="btn ghost" title="Language">🌐</button>
+          <button id="settingsBtn" class="btn ghost" title="Settings">⚙</button>
+        </div>
+      </div>
+
+      <div id="videoWrap">
+        <div id="mpv-slot" class="glowring">
+          <video id="player" playsinline crossorigin="anonymous"></video>
+          <canvas id="videoSpec"></canvas>
+          <div id="spinner" class="spinner hidden" aria-hidden="true"></div>
+
+          <div id="thumbPreview" class="thumb hidden" aria-hidden="true">
+            <canvas id="thumbCanvas" width="240" height="135"></canvas>
+            <div class="thumb-time">0:00</div>
+          </div>
+        </div>
+
+        <div id="controls" class="controls">
+          <div class="row left">
+            <button id="prev" class="btn">⟨⟨5秒</button>
+            <button id="play" class="btn primary">▶/⏸</button>
+            <button id="next" class="btn">5秒⟩⟩</button>
+            <button id="pip" class="btn">PiP</button>
+            <button id="fullscreen" class="btn">全画面</button>
+            <button id="fade" class="btn" title="音量フェード">フェード</button>
+            <button id="shot" class="btn" title="スクショ">📸</button>
+            <button id="reveal" class="btn" title="フォルダ">📂</button>
+          </div>
+
+          <div class="row mid">
+            <span id="curTime">0:00</span>
+            <div id="seekWrap">
+              <canvas id="seekWave"></canvas>
+              <input type="range" id="seek" min="0" max="100" value="0" aria-label="Seek">
+              <div id="markers"></div>
+            </div>
+            <span id="durTime">0:00</span>
+          </div>
+
+          <div class="row right">
+            <label class="inline">速度
+              <input type="range" id="speed" min="0.25" max="2" step="0.05" value="1">
+            </label>
+            <div class="speed-presets">
+              <button data-v="0.75" class="btn ghost">0.75x</button>
+              <button data-v="1.00" class="btn ghost">1.0x</button>
+              <button data-v="1.25" class="btn ghost">1.25x</button>
+              <button data-v="1.50" class="btn ghost">1.5x</button>
+            </div>
+            <label class="inline">音量
+              <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+            </label>
+            <div class="ab">
+              <button id="abA" class="btn" title="A点">A⟶</button>
+              <button id="abB" class="btn" title="B点">⟵B</button>
+              <button id="abC" class="btn" title="解除">✕AB</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <canvas id="spectrum" width="1024" height="220" aria-label="Audio Spectrum"></canvas>
+    </main>
+  </div>
+
+  <!-- === 設定モーダル === -->
+  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="settingsTitle">設定</h2>
+        <button id="settingsClose" class="btn ghost">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="grid2">
+          <section>
+            <h3>表示 / UI</h3>
+            <label class="inline">言語
+              <select id="langSelect">
+                <option value="ja">日本語</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+            <label class="inline">Glow（発光リング）
+              <input type="checkbox" id="glowEnable">
+            </label>
+            <label class="inline">Glow強度
+              <input type="range" id="glowLevel" min="0" max="1" step="0.05" value="0.7">
+            </label>
+            <label class="inline">自動フェード
+              <input type="checkbox" id="autoFade">
+            </label>
+            <label class="inline">フェード時間(ms)
+              <input type="range" id="autoFadeMs" min="200" max="2000" step="50" value="900">
+            </label>
+          </section>
+
+          <section>
+            <h3>可視化（Bars系）</h3>
+            <label class="inline">視認性モード
+              <input type="checkbox" id="hiVis2">
+            </label>
+            <label class="inline">ウォーターフォール
+              <input type="checkbox" id="waterfall2">
+            </label>
+          </section>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="settingsSave" class="btn primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="helpOverlay" class="help hidden" role="dialog" aria-modal="true">
+    <h2>ショートカット</h2>
+    <ul>
+      <li><b>Space</b> 再生/一時停止</li>
+      <li><b>←/→</b> 5秒シーク</li>
+      <li><b>F</b> 全画面 / <b>P</b> PiP</li>
+      <li><b>,/.</b> フレーム刻み</li>
+      <li><b>Shift+Space</b> フェード</li>
+      <li><b>M</b> ミュート</li>
+      <li><b>K/L</b> 押している間だけ 0.5x / 1.5x</li>
+      <li><b>Ctrl+Click</b> シークバーに🔖追加</li>
+    </ul>
+    <button id="helpClose" class="btn">閉じる</button>
+  </div>
+
+  <!-- ログオーバーレイ -->
+  <div id="logPanel" class="console hidden" aria-live="polite"></div>
+
+  <!-- libs -->
+  <script src="../node_modules/hls.js/dist/hls.min.js"></script>
+  <script src="./subs-embedded.js"></script>
+  <script src="./spectrum.js"></script>
+  <script src="./renderer.js"></script>
+</body>
+</html>
